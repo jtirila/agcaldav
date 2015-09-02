@@ -65,8 +65,6 @@ get UID of this Event:
     >> result.count
     => 2
 
-
-
 ####Update Event
 
     event = {:start => "2012-12-29 10:00", :end => "2012-12-30 12:00", :title => "12345", :description => "sdkvjsdf sdkf sdkfj sdkf dsfj"}
@@ -74,20 +72,14 @@ get UID of this Event:
     event[:uid] => "e795c480-34e0-0130-7d1d-109add70606c"
     c = cal.update_event(event)
 
-
-
 ####Delete Event
 
     cal.delete_event("e795c480-34e0-0130-7d1d-109add70606c")
 
 
-
-
 ##Usage ToDo
 
-####not finished ATM
-Have a look tomorrow...
-
+To be done.
 
 
 ##Work to be done ...
@@ -104,7 +96,7 @@ agcaldav will use RSpec for its test coverage. Inside the gem
 directory, you can run the specs for RoR 3.x with:
 
   rake spec 
-(will be implemented in > v0.2.5)  
+(original gem author said it will be implemented in > v0.2.5, not tested yet)
 
 
  

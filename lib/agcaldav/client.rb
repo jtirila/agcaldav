@@ -59,7 +59,6 @@ module AgCalDAV
     end
 
     def find_events data
-      result = ""
       events = []
       res = nil
       __create_http.start {|http|
@@ -101,7 +100,8 @@ module AgCalDAV
     def find_event uuid
       res = nil
       __create_http.start {|http|
-        req = Net::HTTP::Get.new("#{@url}/#{uuid}.ics")        
+        address = "#{@url}/#{uuid}.ics"
+        req = Net::HTTP::Get.new("#{@url}/#{uuid}.ics")
         if not @authtype == 'digest'
         	req.basic_auth @user, @password
         else
@@ -141,49 +141,96 @@ module AgCalDAV
       end
     end
 
-    def create_event event
+    def hash_from_event(event)
+      {
+        :uid => event.uid,
+        :start => event.dtstart.strftime("%Y-%m-%d %H:%M:%S"),
+        :end => event.dtstart.strftime("%Y-%m-%d %H:%M:%S"),
+        :title => event.summary,
+        :description => event.description,
+        :categories => event.categories
+      }
+    end
+
+
+    def event_from_hash(hsh, checkduplicate)
       c = Calendar.new
       c.events = []
-      uuid = UUID.new.generate
-      raise DuplicateError if entry_with_uuid_exists?(uuid)
-      c.event do
-        uid           uuid 
-        dtstart       DateTime.parse(event[:start])
-        dtend         DateTime.parse(event[:end])
-        categories    event[:categories]# Array
-        contacts      event[:contacts] # Array
-        attendees     event[:attendees]# Array
-        duration      event[:duration]
-        summary       event[:title]
-        description   event[:description]
-        klass         event[:accessibility] #PUBLIC, PRIVATE, CONFIDENTIAL
-        location      event[:location]
-        geo_location  event[:geo_location]
-        status        event[:status]
-        url           event[:url]
+      uuid = hsh[:uid] || UUID.new.generate
+      if checkduplicate
+        raise DuplicateError if entry_with_uuid_exists?(uuid)
       end
-      cstring = c.to_ical
+
+      c.event do
+        uid           uuid
+        dtstart       DateTime.parse(hsh[:start])
+        dtend         DateTime.parse(hsh[:end])
+        categories    hsh[:categories]# Array
+        contacts      hsh[:contacts] # Array
+        attendees     hsh[:attendees]# Array
+        duration      hsh[:duration]
+        summary       hsh[:title]
+        description   hsh[:description]
+        klass         hsh[:accessibility] #PUBLIC, PRIVATE, CONFIDENTIAL
+        location      hsh[:location]
+        geo_location  hsh[:geo_location]
+        status        hsh[:status]
+        url           hsh[:url]
+      end
+      c
+    end
+
+    # FIXME: currently unused
+    def event_from_ical_event(ical_event)
+      c = Calendar.new
+      c.events = []
+      start_time = ical_event.dtstart.dup
+      end_time = ical_event.dtend.dup
+      start_time.icalendar_tzid = start_time.icalendar_tzid.gsub("\0", "")
+      end_time.icalendar_tzid = end_time.icalendar_tzid.gsub("\0", "")
+      c.event do
+        uid           ical_event.uid
+        dtstart       start_time
+        dtend         end_time
+        categories    ical_event.categories
+        contacts      ical_event.contacts # Array
+        attendees     ical_event.attendees # Array
+        duration      ical_event.duration
+        summary       ical_event.summary.gsub("\"", "")
+        description   ical_event.description.gsub("\"", "")
+        klass         ical_event.klass.gsub("\"", "")
+        location      ical_event.location
+        geo_location  ical_event.geo_location
+        status        ical_event.status
+        url           ical_event.url
+      end
+      c
+    end
+
+    def create_event(event, checkduplicate = true)
+      e = event_from_hash(event, checkduplicate)
+      cstring = e.to_ical
       res = nil
       http = Net::HTTP.new(@host, @port)
       __create_http.start { |http|
-        req = Net::HTTP::Put.new("#{@url}/#{uuid}.ics")
+        req = Net::HTTP::Put.new("#{@url}/#{e.events.first.uid}.ics")
         req['Content-Type'] = 'text/calendar'
         if not @authtype == 'digest'
         	req.basic_auth @user, @password
         else
-        	req.add_field 'Authorization', digestauth('PUT')
+        	req.add_field 'Authorization', digestauth('PATCH')
         end
         req.body = cstring
         res = http.request( req )
       }
       errorhandling res
-      find_event uuid
+      find_event e.event.uid
     end
 
     def update_event event
       #TODO... fix me
       if delete_event event[:uid]
-        create_event event
+        create_event(hash_from_event(event), false)
       else
         return false
       end
@@ -310,7 +357,7 @@ module AgCalDAV
       	return true
       end
     end
-    def  errorhandling response   
+    def  errorhandling response
       raise AuthenticationError if response.code.to_i == 401
       raise NotExistError if response.code.to_i == 410 
       raise APIError if response.code.to_i >= 500
