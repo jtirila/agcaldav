@@ -224,7 +224,7 @@ module AgCalDAV
         res = http.request( req )
       }
       errorhandling res
-      find_event e.event.uid
+      find_event e.events.first.uid
     end
 
     def update_event event
