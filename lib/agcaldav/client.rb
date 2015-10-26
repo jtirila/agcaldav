@@ -160,7 +160,7 @@ module AgCalDAV
       tzid = Time.zone.name
       tz = TZInfo::Timezone.get(tzid)
       timezone = tz.ical_timezone event_start
-      cal.add timezone
+      c.add timezone
       c.events = []
       uuid = hsh[:uid] || UUID.new.generate
       if checkduplicate
