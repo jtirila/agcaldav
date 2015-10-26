@@ -71,20 +71,20 @@ module AgCalDAV
 			req.add_field 'Authorization', digestauth('REPORT')
 		end
 		    if data[:start].is_a? Integer
-          req.body = AgCalDAV::Request::ReportVEVENT.new(Time.at(data[:start]).utc.strftime("%Y%m%dT%H%M%S"), 
+          req.body = AgCalDAV::Request::ReportVEVENT.new(Time.at(data[:start]).utc.strftime("%Y%m%dT%H%M%S"),
                                                         Time.at(data[:end]).utc.strftime("%Y%m%dT%H%M%S") ).to_xml
         else
-          req.body = AgCalDAV::Request::ReportVEVENT.new(DateTime.parse(data[:start]).utc.strftime("%Y%m%dT%H%M%S"), 
+          req.body = AgCalDAV::Request::ReportVEVENT.new(DateTime.parse(data[:start]).utc.strftime("%Y%m%dT%H%M%S"),
                                                         DateTime.parse(data[:end]).utc.strftime("%Y%m%dT%H%M%S") ).to_xml
         end
         res = http.request(req)
-      } 
+      }
         errorhandling res
         result = ""
         
         xml = REXML::Document.new(res.body)
         REXML::XPath.each( xml, '//c:calendar-data/', {"c"=>"urn:ietf:params:xml:ns:caldav"} ){|c| result << c.text}
-        r = Icalendar.parse(result)      
+        r = Icalendar.parse(result)
         unless r.empty?
           r.each do |calendar|
             calendar.events.each do |event|
@@ -108,14 +108,14 @@ module AgCalDAV
         	req.add_field 'Authorization', digestauth('GET')
         end
         res = http.request( req )
-      }  
+      }
       errorhandling res
       begin
       	r = Icalendar.parse(res.body)
       rescue
       	return false
       else
-      	r.first.events.first 
+      	r.first.events.first
       end
 
       
@@ -155,8 +155,8 @@ module AgCalDAV
 
     def event_from_hash(hsh, checkduplicate)
       c = Calendar.new
-      event_start = DateTime.parse(hsh[:start])
-      event_end = DateTime.parse(hsh[:end])
+      event_start = hsh[:start].to_datetime
+      event_end = hsh[:end].to_datetime
       tzid = Time.zone.name
       tz = TZInfo::Timezone.get(tzid)
       timezone = tz.ical_timezone event_start
@@ -169,8 +169,8 @@ module AgCalDAV
 
       c.event do
         uid           uuid
-        dtstart       DateTime.parse(hsh[:start])
-        dtend         DateTime.parse(hsh[:end])
+        dtstart       event_start.tap { |d| d.ical_params = {'TZID' => tzid} }
+        dtend         event_end
         categories    hsh[:categories]# Array
         contacts      hsh[:contacts] # Array
         attendees     hsh[:attendees]# Array
