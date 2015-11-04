@@ -16,7 +16,9 @@ Gem::Specification.new do |s|
   s.authors     = [%q{Alex Ebeling-Hoppe}]
   s.email       = [%q{ebeling-hoppe@agilastic.de}]
   s.add_runtime_dependency 'tzinfo', ["~> 1.2.2"]
-  s.add_runtime_dependency 'icalendar', ["~> 1.5.4"]
+  s.add_runtime_dependency 'icalendar', ["~> 1.5.5"]
+  s.add_runtime_dependency 'rake'
+  s.add_runtime_dependency 'activesupport'
   s.add_runtime_dependency 'uuid'
   s.add_runtime_dependency 'builder'
   s.add_runtime_dependency 'net-http-digest_auth'
