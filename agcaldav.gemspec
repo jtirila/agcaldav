@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.authors     = [%q{Juha-Matti Tirilä}]
   s.email       = [%q{jtirila@gmail.com}]
   s.add_runtime_dependency 'tzinfo', ["~> 1.2.2"]
-  s.add_runtime_dependency 'icalendar', ["~> 1.5.5"]
+  s.add_runtime_dependency 'icalendar', ["~> 1.5.6"]
   s.add_runtime_dependency 'activesupport'
   s.add_runtime_dependency 'uuid'
   s.add_runtime_dependency 'builder'
