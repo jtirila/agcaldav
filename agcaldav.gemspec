@@ -12,17 +12,17 @@ Gem::Specification.new do |s|
 
   s.license     = 'MIT'
 
-  s.homepage    = %q{https://github.com/agilastic/agcaldav}
-  s.authors     = [%q{Alex Ebeling-Hoppe}]
-  s.email       = [%q{ebeling-hoppe@agilastic.de}]
+  s.homepage    = %q{https://github.com/jtirila/agcaldav}
+  s.authors     = [%q{Juha-Matti Tirilä}]
+  s.email       = [%q{jtirila@gmail.com}]
   s.add_runtime_dependency 'tzinfo', ["~> 1.2.2"]
   s.add_runtime_dependency 'icalendar', ["~> 1.5.5"]
-  s.add_runtime_dependency 'rake'
   s.add_runtime_dependency 'activesupport'
   s.add_runtime_dependency 'uuid'
   s.add_runtime_dependency 'builder'
   s.add_runtime_dependency 'net-http-digest_auth'
   s.add_development_dependency "rspec"  
+  s.add_development_dependency 'rake'
   s.add_development_dependency "fakeweb"
   
 
