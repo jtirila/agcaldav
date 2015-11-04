@@ -27,7 +27,7 @@ describe AgCalDAV::Client do
     uid = UUID.new.generate
     FakeWeb.register_uri(:any, %r{http://user@localhost:5232/user/calendar/(.*).ics}, [{:body => "", :status => ["200", "OK"]},
      {:body => "BEGIN:VCALENDAR\nPRODID:-//Radicale//NONSGML Radicale Server//EN\nVERSION:2.0\nBEGIN:VEVENT\nDESCRIPTION:12345 12ss345\nDTEND:20130101T110000\nDTSTAMP:20130101T161708\nDTSTART:20130101T100000\nSEQUENCE:0\nSUMMARY:123ss45\nUID:#{uid}\nX-RADICALE-NAME:#{uid}.ics\nEND:VEVENT\nEND:VCALENDAR",  :status => ["200", "OK"]}])
-    r = @c.create_event(:start => "2012-12-29 10:00", :end => "2012-12-30 12:00", :title => "12345", :description => "12345 12345")
+    r = @c.create_event({:start => "2012-12-29 10:00", :end => "2012-12-30 12:00", :title => "12345", :description => "12345 12345"}, false)
     r.should_not be_nil
   end
 
