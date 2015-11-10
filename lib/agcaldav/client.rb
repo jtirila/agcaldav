@@ -163,35 +163,49 @@ module AgCalDAV
     end
 
 
-    def event_from_hash(hsh, checkduplicate)
+    def calendar_from_event(event, checkduplicate)
       c = Calendar.new
-      event_start = hsh[:start].to_datetime
-      event_end = hsh[:end].to_datetime
-      tzid = Time.zone.try(:name) || "UTC"
-      tz = TZInfo::Timezone.get(tzid)
-      timezone = tz.ical_timezone event_start
-      c.add timezone
-      c.events = []
-      uuid = hsh[:uid] || UUID.new.generate
-      if checkduplicate
-        raise DuplicateError if entry_with_uuid_exists?(uuid)
-      end
+      if event.is_a? Hash
 
-      c.event do
-        uid           uuid
-        dtstart       event_start.tap { |d| d.ical_params = {'TZID' => tzid} }
-        dtend         event_end
-        categories    hsh[:categories]# Array
-        contacts      hsh[:contacts] # Array
-        attendees     hsh[:attendees]# Array
-        duration      hsh[:duration]
-        summary       hsh[:title]
-        description   hsh[:description]
-        klass         hsh[:accessibility] #PUBLIC, PRIVATE, CONFIDENTIAL
-        location      hsh[:location]
-        geo_location  hsh[:geo_location]
-        status        hsh[:status]
-        url           hsh[:url]
+        event_start = event[:start].to_datetime
+        tzid = Time.zone.try(:name) || "UTC"
+        tz = TZInfo::Timezone.get(tzid)
+        timezone = tz.ical_timezone(event_start)
+        c.add timezone
+        event_end = event[:end].to_datetime
+        uuid = event[:uid] || UUID.new.generate
+        if checkduplicate
+          raise DuplicateError if entry_with_uuid_exists?(uuid)
+        end
+        c.events = []
+        c.event do
+          uid           uuid
+          dtstart       event_start.tap { |d| d.ical_params = {'TZID' => tzid} }
+          dtend         event_end
+          categories    event[:categories]# Array
+          contacts      event[:contacts] # Array
+          attendees     event[:attendees]# Array
+          duration      event[:duration]
+          summary       event[:title]
+          description   event[:description]
+          klass         event[:accessibility] #PUBLIC, PRIVATE, CONFIDENTIAL
+          location      event[:location]
+          geo_location  event[:geo_location]
+          status        event[:status]
+          url           event[:url]
+        end
+      elsif !event.is_a?(Icalendar::Event)
+        raise InvalidEventDataError
+      else
+        tzid = Time.zone.try(:name) || "UTC"
+        tz = TZInfo::Timezone.get(tzid)
+        timezone = tz.ical_timezone(event.dtstart)
+        c.add timezone
+        uuid = event.uid
+        if checkduplicate
+          raise DuplicateError if entry_with_uuid_exists?(uuid)
+        end
+        c.add_event(event)
       end
       c
     end
@@ -224,11 +238,12 @@ module AgCalDAV
     end
 
     def create_event(event, checkduplicate = true)
-      e = event_from_hash(event, checkduplicate)
-      cstring = e.to_ical
+      return unless c = calendar_from_event(event, checkduplicate)
+
+      cstring = c.to_ical
       res = nil
       __create_http.start do |http|
-        req = Net::HTTP::Put.new("#{@url}/#{e.events.first.uid}.ics")
+        req = Net::HTTP::Put.new("#{@url}/#{c.events.first.uid}.ics")
         req['Content-Type'] = 'text/calendar'
         if not @authtype == 'digest'
         	req.basic_auth @user, @password
@@ -239,7 +254,7 @@ module AgCalDAV
         res = http.request( req )
       end
       errorhandling res
-      find_event e.events.first.uid
+      find_event c.events.first.uid
     end
 
     def update_event event
@@ -381,8 +396,9 @@ module AgCalDAV
 
   class AgCalDAVError < StandardError
   end
-  class AuthenticationError < AgCalDAVError; end
-  class DuplicateError      < AgCalDAVError; end
-  class APIError            < AgCalDAVError; end
-  class NotExistError       < AgCalDAVError; end
+  class AuthenticationError    < AgCalDAVError; end
+  class DuplicateError         < AgCalDAVError; end
+  class APIError               < AgCalDAVError; end
+  class NotExistError          < AgCalDAVError; end
+  class InvalidEventDataError < AgCalDAVError; end
 end
