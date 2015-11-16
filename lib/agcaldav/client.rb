@@ -169,7 +169,7 @@ module AgCalDAV
 
         event_start = event[:start].to_datetime
         tzid = Time.zone.try(:name) || "UTC"
-        tz = TZInfo::Timezone.get(tzid)
+        tz = ActiveSupport::TimeZone.find_tzinfo(tzid)
         timezone = tz.ical_timezone(event_start)
         c.add timezone
         event_end = event[:end].to_datetime
@@ -198,8 +198,8 @@ module AgCalDAV
         raise InvalidEventDataError
       else
         tzid = Time.zone.try(:name) || "UTC"
-        tz = TZInfo::Timezone.get(tzid)
-        timezone = tz.ical_timezone(event.dtstart)
+        tz = ActiveSupport::TimeZone.find_tzinfo(tzid)
+        timezone = tz.ical_timezone(event_start)
         c.add timezone
         uuid = event.uid
         if checkduplicate
