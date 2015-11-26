@@ -102,9 +102,6 @@ module AgCalDAV
             events << event
           end
         end
-        puts "****** find_events, this is what we got"
-        puts events.inspect
-        puts "****** find_events, this is what we got(end)"
         events
       else
         return false
@@ -125,16 +122,10 @@ module AgCalDAV
       end
       errorhandling res
       begin
-        puts "This is what we got (raw)"
-        puts res.body
-        puts "This is what we got (end)"
       	r = Icalendar.parse(res.body)
       rescue
       	return false
       else
-        puts "After parsing"
-        puts r.inspect
-        puts "After parsing finished"
       	r.try(:first).try(:events).try(:first)
       end
 
@@ -176,7 +167,6 @@ module AgCalDAV
     def calendar_from_event(event, checkduplicate)
       c = Icalendar::Calendar.new
       if event.is_a? Hash
-        puts "creating from hash... "
         event_start = Icalendar::Values::DateTime.new(event[:start].to_datetime)
         tzid_for_lookup = Time.zone.try(:name) || "Europe/Helsinki"
         tz = ActiveSupport::TimeZone.find_tzinfo(tzid_for_lookup)
@@ -204,8 +194,6 @@ module AgCalDAV
         ical_event.status       = event[:status]
         ical_event.url          = event[:url]
         c.add_event(ical_event)
-        puts "ical_event: "
-        puts ical_event.inspect
       elsif !event.is_a?(Icalendar::Event)
         raise InvalidEventDataError
       else
@@ -252,9 +240,6 @@ module AgCalDAV
       return unless c = calendar_from_event(event, checkduplicate)
 
       cstring = c.to_ical
-      puts "** This is what we'll send ***"
-      puts cstring
-      puts "*****"
       res = nil
       __create_http.start do |http|
         req = Net::HTTP::Put.new("#{@url}/#{c.events.first.uid}.ics")
