@@ -12,45 +12,45 @@ module Icalendar
   # represent an item of work assigned to an individual; such as "turn in
   # travel expense today".
   class Todo < Component
-    ical_component :alarms
+    component :alarms
 
     # Single properties
-    ical_property :ip_class
-    ical_property :completed
-    ical_property :created
-    ical_property :description
-    ical_property :dtstamp, :timestamp
-    ical_property :dtstart, :start
-    ical_property :geo
-    ical_property :last_modified
-    ical_property :location
-    ical_property :organizer
-    ical_property :percent_complete, :percent
-    ical_property :priority
-    ical_property :recurid, :recurrence_id
-    ical_property :sequence, :seq
-    ical_property :status
-    ical_property :summary
-    ical_property :uid, :user_id
-    ical_property :url
+    single_property :ip_class, :text
+    single_property :completed, :boolean
+    single_property :created, :datetime
+    single_property :description, :text
+    single_property :dtstamp, :datetime
+    single_property :dtstart, :datetime
+    single_property :geo, :text
+    single_property :last_modified, :datetime
+    single_property :location, :text
+    single_property :organizer, :text
+    single_property :percent_complete, :integer
+    single_property :priority, :integer
+    single_property :recurid, :integer
+    single_property :sequence, :integer
+    single_property :status, :text
+    single_property :summary, :text
+    single_property :uid, :text
+    single_property :url, :url
     
     # Single but mutually exclusive TODO: not testing anything yet
-    ical_property :due
-    ical_property :duration
+    single_property :due, :datetime
+    single_property :duration, :integer
 
     # Multi-properties
-    ical_multi_property :attach, :attachment, :attachments
-    ical_multiline_property :attendee, :attendee, :attendees
-    ical_multi_property :categories, :category, :categories
-    ical_multi_property :comment, :comment, :comments
-    ical_multi_property :contact, :contact, :contacts
-    ical_multi_property :exdate, :exception_date, :exception_dates
-    ical_multi_property :exrule, :exception_rule, :exception_rules
-    ical_multi_property :rstatus, :request_status, :request_statuses
-    ical_multi_property :related_to, :related_to, :related_tos
-    ical_multi_property :resources, :resource, :resources
-    ical_multi_property :rdate, :recurrence_date, :recurrence_dates
-    ical_multi_property :rrule, :recurrence_rule, :recurrence_rules
+    multi_property :attach, :text 
+    multi_property :attendee, :text 
+    multi_property :categories, :text 
+    multi_property :comment, :text 
+    multi_property :contact, :text 
+    multi_property :exdate, :datetime 
+    multi_property :exrule, :text
+    multi_property :rstatus, :text 
+    multi_property :related_to, :text
+    multi_property :resources, :text
+    multi_property :rdate, :datetime
+    multi_property :rrule, :recur
     
     def initialize()
       super("VTODO")

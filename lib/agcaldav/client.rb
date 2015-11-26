@@ -1,6 +1,7 @@
 require 'active_support/core_ext/string/conversions'
 require 'tzinfo'
 require 'icalendar'
+require 'icalendar/calendar'
 require 'icalendar/tzinfo'
 
 module AgCalDAV
@@ -101,6 +102,9 @@ module AgCalDAV
             events << event
           end
         end
+        puts "****** find_events, this is what we got"
+        puts events.inspect
+        puts "****** find_events, this is what we got(end)"
         events
       else
         return false
@@ -121,11 +125,17 @@ module AgCalDAV
       end
       errorhandling res
       begin
+        puts "This is what we got (raw)"
+        puts res.body
+        puts "This is what we got (end)"
       	r = Icalendar.parse(res.body)
       rescue
       	return false
       else
-      	r.first.events.first
+        puts "After parsing"
+        puts r.inspect
+        puts "After parsing finished"
+      	r.try(:first).try(:events).try(:first)
       end
 
       
@@ -164,43 +174,45 @@ module AgCalDAV
 
 
     def calendar_from_event(event, checkduplicate)
-      c = Calendar.new
+      c = Icalendar::Calendar.new
       if event.is_a? Hash
-
-        event_start = event[:start].to_datetime
-        tzid = Time.zone.try(:name) || "UTC"
-        tz = ActiveSupport::TimeZone.find_tzinfo(tzid)
+        puts "creating from hash... "
+        event_start = Icalendar::Values::DateTime.new(event[:start].to_datetime)
+        tzid_for_lookup = Time.zone.try(:name) || "Europe/Helsinki"
+        tz = ActiveSupport::TimeZone.find_tzinfo(tzid_for_lookup)
+        tzid = tz.name
         timezone = tz.ical_timezone(event_start)
-        c.add timezone
-        event_end = event[:end].to_datetime
+        c.add_component timezone
+        event_end = Icalendar::Values::DateTime.new(event[:end].to_datetime)
         uuid = event[:uid] || UUID.new.generate
         if checkduplicate
           raise DuplicateError if entry_with_uuid_exists?(uuid)
         end
-        c.events = []
-        c.event do
-          uid           uuid
-          dtstart       event_start.tap { |d| d.ical_params = {'TZID' => tzid} }
-          dtend         event_end
-          categories    event[:categories]# Array
-          contacts      event[:contacts] # Array
-          attendees     event[:attendees]# Array
-          duration      event[:duration]
-          summary       event[:title]
-          description   event[:description]
-          klass         event[:accessibility] #PUBLIC, PRIVATE, CONFIDENTIAL
-          location      event[:location]
-          geo_location  event[:geo_location]
-          status        event[:status]
-          url           event[:url]
-        end
+        ical_event = Icalendar::Event.new
+        ical_event.uid          = uuid
+        ical_event.dtstart      = event_start.tap { |d| d.ical_params = {'TZID' => tzid}}
+        ical_event.dtend        = event_end
+        ical_event.categories   = event[:categories]# Array
+        ical_event.contacts     = event[:contacts] # Array
+        ical_event.attendees    = event[:attendees]# Array
+        ical_event.duration     = event[:duration]
+        ical_event.summary      = event[:title]
+        ical_event.description  = event[:description]
+        ical_event.ip_class     = event[:accessibility] #PUBLIC, PRIVATE, CONFIDENTIAL
+        ical_event.location     = event[:location]
+        ical_event.geo          = event[:geo_location]
+        ical_event.status       = event[:status]
+        ical_event.url          = event[:url]
+        c.add_event(ical_event)
+        puts "ical_event: "
+        puts ical_event.inspect
       elsif !event.is_a?(Icalendar::Event)
         raise InvalidEventDataError
       else
         tzid = Time.zone.try(:name) || "UTC"
         tz = ActiveSupport::TimeZone.find_tzinfo(tzid)
         timezone = tz.ical_timezone(event_start)
-        c.add timezone
+        c.add_component timezone
         uuid = event.uid
         if checkduplicate
           raise DuplicateError if entry_with_uuid_exists?(uuid)
@@ -213,7 +225,6 @@ module AgCalDAV
     # FIXME: currently unused
     def event_from_ical_event(ical_event)
       c = Calendar.new
-      c.events = []
       start_time = ical_event.dtstart.dup
       end_time = ical_event.dtend.dup
       start_time.icalendar_tzid = start_time.icalendar_tzid.gsub("\0", "")
@@ -241,6 +252,9 @@ module AgCalDAV
       return unless c = calendar_from_event(event, checkduplicate)
 
       cstring = c.to_ical
+      puts "** This is what we'll send ***"
+      puts cstring
+      puts "*****"
       res = nil
       __create_http.start do |http|
         req = Net::HTTP::Put.new("#{@url}/#{c.events.first.uid}.ics")

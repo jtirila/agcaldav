@@ -20,7 +20,6 @@ describe AgCalDAV::Client do
     end
   end
 
-
   it "check Class of new calendar" do
     @c.class.to_s.should == "AgCalDAV::Client"
   end
@@ -44,14 +43,11 @@ describe AgCalDAV::Client do
       # At the time of writing this, there is no configured time zone so this will fall back to UTC.  
       tzid = Time.zone.try(:name) || "UTC"
 
-      start_time = "2012-12-29 10:00".to_datetime
+      start_time = Icalendar::Values::DateTime.new(DateTime.parse("2012-12-29 10:00"))
       start_time.ical_params = {'TZID' => tzid}
-      start_time.icalendar_tzid = tzid
 
-
-      end_time = "2012-12-30 12:00".to_datetime
+      end_time = Icalendar::Values::DateTime.new(DateTime.parse("2012-12-30 12:00"))
       end_time.ical_params = {'TZID' => tzid}
-      end_time.icalendar_tzid = tzid
 
       event = Icalendar::Event.new
 
@@ -76,6 +72,7 @@ describe AgCalDAV::Client do
   end  
 
 
+
   it "failed create one event DuplicateError" do
     uid = "5385e2d0-3707-0130-9e49-0019996389cc"
     FakeWeb.register_uri(:any, %r{http://user@localhost:5232/user/calendar/(.*).ics}, :body => "BEGIN:VCALENDAR\nPRODID:.....")
@@ -97,24 +94,26 @@ describe AgCalDAV::Client do
   end
 
 
-  it "find 2 events" do
-    module Net
-      # Fakeweb doesn't worke here HTTP-method "REPORT" is unknown 
-      class HTTP
-        def request(req, body = nil, &block)
-          self
-        end
-        def code
-          "200"
-        end
-        def body
-          "<?xml version=\"1.0\"?>\n<multistatus xmlns=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n  <response>\n    <href>/user/calendar/960232b0-371c-0130-9e6b-001999638982.ics</href>\n    <propstat>\n      <prop>\n        <getetag>\"-5984324385549365166\"</getetag>\n        <C:calendar-data>BEGIN:VCALENDAR\nPRODID:-//Radicale//NONSGML Radicale Server//EN\nVERSION:2.0\nBEGIN:VEVENT\nDESCRIPTION:12345 12345\nDTEND:20010202T120000\nDTSTAMP:20130102T161119\nDTSTART:20010202T080000\nSEQUENCE:0\nSUMMARY:6789\nUID:960232b0-371c-0130-9e6b-001999638982\nX-RADICALE-NAME:960232b0-371c-0130-9e6b-001999638982.ics\nEND:VEVENT\nEND:VCALENDAR\n</C:calendar-data>\n      </prop>\n      <status>HTTP/1.1 200 OK</status>\n    </propstat>\n  </response>\n  <response>\n    <href>/user/calendar/98f067a0-371c-0130-9e6c-001999638982.ics</href>\n    <propstat>\n      <prop>\n        <getetag>\"3611068816283260390\"</getetag>\n        <C:calendar-data>BEGIN:VCALENDAR\nPRODID:-//Radicale//NONSGML Radicale Server//EN\nVERSION:2.0\nBEGIN:VEVENT\nDESCRIPTION:12345 12345\nDTEND:20010203T120000\nDTSTAMP:20130102T161124\nDTSTART:20010203T080000\nSEQUENCE:0\nSUMMARY:6789\nUID:98f067a0-371c-0130-9e6c-001999638982\nX-RADICALE-NAME:98f067a0-371c-0130-9e6c-001999638982.ics\nEND:VEVENT\nEND:VCALENDAR\n</C:calendar-data>\n      </prop>\n      <status>HTTP/1.1 200 OK</status>\n    </propstat>\n  </response>\n</multistatus>\n\n"          
+  context "finding events" do
+    it "find 2 events" do
+      module Net
+        # Fakeweb doesn't worke here HTTP-method "REPORT" is unknown 
+        class HTTP
+          def request(req, body = nil, &block)
+            self
+          end
+          def code
+            "200"
+          end
+          def body
+            "<?xml version=\"1.0\"?>\n<multistatus xmlns=\"DAV:\" xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n  <response>\n    <href>/user/calendar/960232b0-371c-0130-9e6b-001999638982.ics</href>\n    <propstat>\n      <prop>\n        <getetag>\"-5984324385549365166\"</getetag>\n        <C:calendar-data>BEGIN:VCALENDAR\nPRODID:-//Radicale//NONSGML Radicale Server//EN\nVERSION:2.0\nBEGIN:VEVENT\nDESCRIPTION:12345 12345\nDTEND:20010202T120000\nDTSTAMP:20130102T161119\nDTSTART:20010202T080000\nSEQUENCE:0\nSUMMARY:6789\nUID:960232b0-371c-0130-9e6b-001999638982\nX-RADICALE-NAME:960232b0-371c-0130-9e6b-001999638982.ics\nEND:VEVENT\nEND:VCALENDAR\n</C:calendar-data>\n      </prop>\n      <status>HTTP/1.1 200 OK</status>\n    </propstat>\n  </response>\n  <response>\n    <href>/user/calendar/98f067a0-371c-0130-9e6c-001999638982.ics</href>\n    <propstat>\n      <prop>\n        <getetag>\"3611068816283260390\"</getetag>\n        <C:calendar-data>BEGIN:VCALENDAR\nPRODID:-//Radicale//NONSGML Radicale Server//EN\nVERSION:2.0\nBEGIN:VEVENT\nDESCRIPTION:12345 12345\nDTEND:20010203T120000\nDTSTAMP:20130102T161124\nDTSTART:20010203T080000\nSEQUENCE:0\nSUMMARY:6789\nUID:98f067a0-371c-0130-9e6c-001999638982\nX-RADICALE-NAME:98f067a0-371c-0130-9e6c-001999638982.ics\nEND:VEVENT\nEND:VCALENDAR\n</C:calendar-data>\n      </prop>\n      <status>HTTP/1.1 200 OK</status>\n    </propstat>\n  </response>\n</multistatus>\n\n"          
+          end
         end
       end
-    end
-     r = @c.find_events(:start => "2001-02-02 07:00", :end => "2000-02-03 23:59")
-     r.should_not be_nil
-     r.length.should == 2
+       r = @c.find_events(:start => "2001-02-02 07:00", :end => "2000-02-03 23:59")
+       r.should_not be_nil
+       r.length.should == 2
+     end
    end
 
 
