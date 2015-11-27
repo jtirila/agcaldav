@@ -1,6 +1,7 @@
 require 'active_support/core_ext/string/conversions'
 require 'tzinfo'
 require 'icalendar'
+require_relative './datetime'
 require 'icalendar/calendar'
 require 'icalendar/tzinfo'
 
@@ -91,6 +92,7 @@ module AgCalDAV
         res = http.request(req)
       end
       errorhandling res
+
       result = ""
       
       xml = REXML::Document.new(res.body)
@@ -168,9 +170,9 @@ module AgCalDAV
       c = Icalendar::Calendar.new
       if event.is_a? Hash
         event_start = Icalendar::Values::DateTime.new(event[:start].to_datetime)
-        tzid_for_lookup = Time.zone.try(:name) || "Europe/Helsinki"
+        tzid_for_lookup = Time.zone.try(:name) || "Europe/Berlin"
         tz = ActiveSupport::TimeZone.find_tzinfo(tzid_for_lookup)
-        tzid = tz.name
+        tzid = tz.try(:name)
         timezone = tz.ical_timezone(event_start)
         c.add_component timezone
         event_end = Icalendar::Values::DateTime.new(event[:end].to_datetime)
@@ -180,8 +182,8 @@ module AgCalDAV
         end
         ical_event = Icalendar::Event.new
         ical_event.uid          = uuid
-        ical_event.dtstart      = event_start.tap { |d| d.ical_params = {'TZID' => tzid}}
-        ical_event.dtend        = event_end
+        ical_event.dtstart      = event_start.tap { |d| d.icalendar_tzid = tzid; d.ical_params = {'TZID' => [tzid]}}
+        ical_event.dtend        = event_end.tap { |d| d.icalendar_tzid = tzid; d.ical_params = {'TZID' => [tzid]}}
         ical_event.categories   = event[:categories]# Array
         ical_event.contacts     = event[:contacts] # Array
         ical_event.attendees    = event[:attendees]# Array
