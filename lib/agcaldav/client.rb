@@ -145,7 +145,7 @@ module AgCalDAV
         end
         res = http.request( req )
       end
-      errorhandling res
+      errorhandling res rescue NotExistError
       # accept any success code
       if res.code.to_i.between?(200,299)
         return true
@@ -170,7 +170,7 @@ module AgCalDAV
       c = Icalendar::Calendar.new
       if event.is_a? Hash
         event_start = Icalendar::Values::DateTime.new(event[:start].to_datetime)
-        tzid_for_lookup = Time.zone.try(:name) || "Europe/Berlin"
+        tzid_for_lookup = Time.zone.try(:name) || "UTC"
         tz = ActiveSupport::TimeZone.find_tzinfo(tzid_for_lookup)
         tzid = tz.try(:name)
         timezone = tz.ical_timezone(event_start)
@@ -184,6 +184,7 @@ module AgCalDAV
         ical_event.uid          = uuid
         ical_event.dtstart      = event_start.tap { |d| d.icalendar_tzid = tzid; d.ical_params = {'TZID' => [tzid]}}
         ical_event.dtend        = event_end.tap { |d| d.icalendar_tzid = tzid; d.ical_params = {'TZID' => [tzid]}}
+        ical_event.dtstamp      = Icalendar::Values::DateTime.new(Time.now.to_datetime.utc)
         ical_event.categories   = event[:categories]# Array
         ical_event.contacts     = event[:contacts] # Array
         ical_event.attendees    = event[:attendees]# Array
@@ -242,6 +243,7 @@ module AgCalDAV
       return unless c = calendar_from_event(event, checkduplicate)
 
       cstring = c.to_ical
+
       res = nil
       __create_http.start do |http|
         req = Net::HTTP::Put.new("#{@url}/#{c.events.first.uid}.ics")
@@ -377,6 +379,7 @@ module AgCalDAV
         
         res = http.request( req )
       	
+
       end
       begin
         errorhandling res
@@ -387,9 +390,11 @@ module AgCalDAV
       	return true
       end
     end
-    def  errorhandling response
+
+    def errorhandling response
       raise AuthenticationError if response.try(:code).try(:to_i) == 401
       raise NotExistError if response.try(:code).try(:to_i) == 410
+      raise NotExistError if response.try(:code).try(:to_i) == 404
       raise APIError if response.try(:code).try(:to_i).try(:>=, 500)
     end
   end
