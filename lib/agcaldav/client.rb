@@ -82,13 +82,8 @@ module AgCalDAV
           req.add_field 'Authorization', digestauth('REPORT')
         end
 
-		    if data[:start].is_a? Integer
-          req.body = AgCalDAV::Request::ReportVEVENT.new(Time.at(data[:start]).utc.strftime("%Y%m%dT%H%M%S"),
-                                                        Time.at(data[:end]).utc.strftime("%Y%m%dT%H%M%S") ).to_xml
-        else
-          req.body = AgCalDAV::Request::ReportVEVENT.new(DateTime.parse(data[:start]).utc.strftime("%Y%m%dT%H%M%S"),
-                                                        DateTime.parse(data[:end]).utc.strftime("%Y%m%dT%H%M%S") ).to_xml
-        end
+        req.body = AgCalDAV::Request::ReportVEVENT.new( mk_dt_str(data[:start]), mk_dt_str(data[:end]) ).to_xml
+
         res = http.request(req)
       end
       errorhandling res
@@ -395,6 +390,13 @@ module AgCalDAV
       raise NotExistError if response.try(:code).try(:to_i) == 410
       raise NotExistError if response.try(:code).try(:to_i) == 404
       raise APIError if response.try(:code).try(:to_i).try(:>=, 500)
+    end
+
+    def mk_dt_str(value)
+      if value.is_a? Integer
+        value=Time.at(value)
+      end
+      value.to_datetime.utc.strftime("%Y%m%dT%H%M%S")
     end
   end
 
