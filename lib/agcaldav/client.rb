@@ -91,7 +91,7 @@ module AgCalDAV
       result = ""
 
       xml = REXML::Document.new(res.body)
-      REXML::XPath.each( xml, '//c:calendar-data/', {"c"=>"urn:ietf:params:xml:ns:caldav"} ){|c| result << c.text}
+      REXML::XPath.each( xml, '//c:calendar-data/', {"c"=>"urn:ietf:params:xml:ns:caldav"} ){|c| result << c.text + "\n" }
       r = Icalendar::Calendar.parse(result)
       unless r.empty?
         r.each do |calendar|
