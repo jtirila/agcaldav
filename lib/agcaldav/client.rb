@@ -97,7 +97,7 @@ module AgCalDAV
 
       xml = REXML::Document.new(res.body)
       REXML::XPath.each( xml, '//c:calendar-data/', {"c"=>"urn:ietf:params:xml:ns:caldav"} ){|c| result << c.text}
-      r = Icalendar.parse(result)
+      r = Icalendar::Calendar.parse(result)
       unless r.empty?
         r.each do |calendar|
           calendar.events.each do |event|
@@ -113,22 +113,21 @@ module AgCalDAV
     def find_event uuid
       res = nil
       __create_http.start do |http|
-        address = "#{@url}/#{uuid}.ics"
         req = Net::HTTP::Get.new("#{@url}/#{uuid}.ics")
         if not @authtype == 'digest'
-        	req.basic_auth @user, @password
+          req.basic_auth @user, @password
         else
-        	req.add_field 'Authorization', digestauth('GET')
+          req.add_field 'Authorization', digestauth('GET')
         end
         res = http.request( req )
       end
       errorhandling res
       begin
-      	r = Icalendar.parse(res.body)
+        r = Icalendar::Calendar.parse(res.body)
       rescue
-      	return false
+        return false
       else
-      	r.try(:first).try(:events).try(:first)
+        r.try(:first).try(:events).try(:first)
       end
 
 
@@ -139,9 +138,9 @@ module AgCalDAV
       __create_http.start do |http|
         req = Net::HTTP::Delete.new("#{@url}/#{uuid}.ics")
         if not @authtype == 'digest'
-        	req.basic_auth @user, @password
+          req.basic_auth @user, @password
         else
-        	req.add_field 'Authorization', digestauth('DELETE')
+          req.add_field 'Authorization', digestauth('DELETE')
         end
         res = http.request( req )
       end
@@ -285,7 +284,7 @@ module AgCalDAV
         res = http.request( req )
       end
       errorhandling res
-      r = Icalendar.parse(res.body)
+      r = Icalendar::Calendar.parse(res.body)
       r.first.todos.first
     end
 
@@ -383,7 +382,7 @@ module AgCalDAV
       end
       begin
         errorhandling res
-        Icalendar.parse(res.body)
+        Icalendar::Calendar.parse(res.body)
       rescue
       	return false
       else
