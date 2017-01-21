@@ -24,7 +24,7 @@ module AgCalDAV
         @proxy_host = proxy_uri.host
         @proxy_port = proxy_uri.port.to_i
       end
-      
+
       uri = URI(data[:uri])
       @host     = uri.host
       @port     = uri.port.to_i
@@ -34,16 +34,16 @@ module AgCalDAV
       @read_timeout  = data[:read_timeout]
       @password = data[:password]
       @ssl      = uri.scheme == 'https'
-      
+
       unless data[:authtype].nil?
       	@authtype = data[:authtype]
       	if @authtype == 'digest'
-      	
+
       		@digest_auth = Net::HTTP::DigestAuth.new
       		@duri = URI.parse data[:uri]
       		@duri.user = @user
       		@duri.password = @password
-      		
+
       	elsif @authtype == 'basic'
 	    	#Don't Raise or do anything else
 	    else
@@ -73,9 +73,9 @@ module AgCalDAV
       events = []
       res = nil
       __create_http.start do |http|
-      	
-        req = Net::HTTP::Report.new(@url, initheader = {'Content-Type'=>'application/xml'} )
-        
+
+        req = Net::HTTP::Report.new(@url, {'Content-Type'=>'application/xml; charset="utf-8"', 'Depth'=>'1'} )
+
         if not @authtype == 'digest'
           req.basic_auth @user, @password
         else
@@ -94,7 +94,7 @@ module AgCalDAV
       errorhandling res
 
       result = ""
-      
+
       xml = REXML::Document.new(res.body)
       REXML::XPath.each( xml, '//c:calendar-data/', {"c"=>"urn:ietf:params:xml:ns:caldav"} ){|c| result << c.text}
       r = Icalendar.parse(result)
@@ -131,7 +131,7 @@ module AgCalDAV
       	r.try(:first).try(:events).try(:first)
       end
 
-      
+
     end
 
     def delete_event uuid
@@ -270,7 +270,7 @@ module AgCalDAV
     end
 
     def add_alarm tevent, altCal="Calendar"
-    
+
     end
 
     def find_todo uuid
@@ -334,7 +334,7 @@ module AgCalDAV
       raise DuplicateError if entry_with_uuid_exists?(uuid)
 
       __create_http.start do |http|
-        req = Net::HTTP::Report.new(@url, initheader = {'Content-Type'=>'application/xml'} )
+        req = Net::HTTP::Report.new(@url, {'Content-Type'=>'application/xml; charset="utf-8"', 'Depth'=>'1'} )
         if not @authtype == 'digest'
         	req.basic_auth @user, @password
         else
@@ -348,27 +348,27 @@ module AgCalDAV
     end
 
     private
-    
+
     def digestauth method
-		
+
 	    h = Net::HTTP.new @duri.host, @duri.port
 	    if @ssl
 	    	h.use_ssl = @ssl
 	    	h.verify_mode = OpenSSL::SSL::VERIFY_NONE
 	    end
 	    req = Net::HTTP::Get.new @duri.request_uri
-	    
+
 	    res = h.request req
 	    # res is a 401 response with a WWW-Authenticate header
-	    
+
 	    auth = @digest_auth.auth_header @duri, res['www-authenticate'], method
-	    
+
     	return auth
     end
-    
+
     def entry_with_uuid_exists? uuid
       res = nil
-      
+
       __create_http.start do |http|
         req = Net::HTTP::Get.new("#{@url}/#{uuid}.ics")
         if not @authtype == 'digest'
@@ -376,14 +376,14 @@ module AgCalDAV
         else
         	req.add_field 'Authorization', digestauth('GET')
         end
-        
+
         res = http.request( req )
-      	
+
 
       end
       begin
         errorhandling res
-      	Icalendar.parse(res.body)
+        Icalendar.parse(res.body)
       rescue
       	return false
       else
